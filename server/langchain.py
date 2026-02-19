@@ -1,5 +1,7 @@
 import streamlit as st
 import requests
+import os
+from document_loader import db
 
 st.title("RAG AI Chat Bot")
 st.warning("This is a demo of a RAG integrated chat bot. Please enter your query below and click 'Send' to get a response from the bot.")
@@ -23,7 +25,11 @@ if user_input:
     #send the data to llm and get the response
     with st.spinner("Generating response..."):
         try:
-            api_response = requests.post(API_URL, json={"input": {"context": "", "question": user_input, "answer": ""}})
+            # Retrieve relevant documents from vector store
+            retrieved_docs = db.similarity_search(user_input, k=3)
+            context = "\n".join([doc.page_content for doc in retrieved_docs])
+            
+            api_response = requests.post(API_URL, json={"input": {"context": context, "question": user_input, "answer": ""}})
             if api_response.status_code != 200:
                 st.error(f"Error: {api_response.status_code} - {api_response.text}")
                 response = "Sorry, I couldn't generate a response."
